@@ -10,7 +10,7 @@
 #define _GNU_SOURCE
 #include <unistd.h>
 
-
+/* TODO: tasks are executed based on the initial order. */
 /*TODO: add logging. */
 
 void thread_pool_start(thread_pool_t *tpool) {

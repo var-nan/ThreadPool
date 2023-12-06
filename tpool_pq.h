@@ -18,7 +18,7 @@ typedef enum priority {HIGH = 1, MEDIUM = 3, LOW = 5} priority_t;
 typedef struct task {
     void (*function)(int);
     int arguments;
-    int priority;
+    int deadline; // higher deadline number -> lower priority. Lower deadline number -> higher priority.
 } task_t;
 
 typedef struct tpool_pq {
@@ -29,7 +29,7 @@ typedef struct tpool_pq {
 
 #endif
 
-// functions for priority queue
+// functions for deadline queue
 int init_tpool_pq(tpool_pq_t **pq, int queue_size, task_t *task_list);
 
 //int init_tpool_pq_list(tpool_pq_t *pq, int queue_size, tast_t *task_list);

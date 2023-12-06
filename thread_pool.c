@@ -87,12 +87,7 @@ int thread_pool_init_list(thread_pool_t **thr_pool, int num_threads, int max_que
     tpool->queue_closed = 0;
     tpool->shutdown = 0;
 
-
-
-
     // TODO: setup performance test for optimal number of threads.
-
-
 
     /* initialize conditional variables */
     if ((status = pthread_mutex_init((tpool->mutex), NULL))!= 0)
@@ -115,6 +110,9 @@ int thread_pool_init_list(thread_pool_t **thr_pool, int num_threads, int max_que
     }
 
     *thr_pool = tpool;
+    // free memory
+    //free(tpool->mutex);
+    free(tpool);
 
     return 1;
 }
@@ -127,7 +125,7 @@ int thread_pool_init_qs(thread_pool_t **tpool, int num_threads, int max_queue_si
 
 int thread_pool_submit_task(thread_pool_t **tpool, task_t task) {
 
-    //task_t task = {function, args, priority};
+    //task_t task = {function, args, deadline};
 
     // lock on task queue
     pthread_mutex_lock((*tpool)->mutex);
@@ -243,8 +241,8 @@ int thread_pool_shutdown(thread_pool_t **tpool, int finish) {
     printf("Number of tasks remaining: %d\n", (*tpool)->cur_queue_size);
 
     /* clean up resources. */
-    free ((*tpool)->threads);
-    free (*tpool);
+    //free ((*tpool)->threads);
+    free (tpool);
     //free(tpool);
 
     return 1;

@@ -10,24 +10,32 @@
 /* TODO: add logging. */
 
 
-void swap(task_t *tasks, int i, int j) {
-    task_t temp = (*(tasks+i));
+void swap(task_t **tasks, int i, int j) {
+    task_t temp = *(*(tasks+i));
     (*(tasks+i)) = (*(tasks+j));
-    (*(tasks+j)) = temp;
+    *(*(tasks+j)) = temp;
 }
 
 /* functions to maintain heap property*/
-void heapify_down(task_t *tasks, int heap_size, int i ) {
+void heapify_down(task_t **tasks, int heap_size, int i ) {
     int left = 2* i;
     int right = left + 1;
     int largest = i;
 
-    /* compare priorities of childs and swap*/
-    if (left <= heap_size && (((tasks+left))->priority < ((tasks+i))->priority))
+    task_t *t = *tasks;
+    (t+left)->deadline = 9;
+    /* compare priorities of children and swap*/
+    if (left <= heap_size && ((*(tasks) + left)->deadline < (*(tasks) + i)->deadline) )
         largest = left;
 
-    if (right <= heap_size && (((tasks+right))->priority < ((tasks+largest))->priority))
+    if (right <= heap_size && ((*(tasks)+right)->deadline >= (*(tasks) + largest)->deadline) )
         largest = right;
+
+    //if (left <= heap_size && (((tasks+left))->deadline < ((tasks+i))->deadline))
+    //    largest = left;
+
+    //if (right <= heap_size && (((tasks+right))->deadline < ((tasks+largest))->deadline))
+    //    largest = right;
 
     if (largest != i && largest < heap_size){
         swap(tasks, i, largest);
@@ -35,12 +43,49 @@ void heapify_down(task_t *tasks, int heap_size, int i ) {
     }
 }
 
-void heapify_up(task_t *tasks, int heap_size, int i) {
+void build_heap(task_t **tasks, int n_tasks) {
+    int start = 1 + (n_tasks)/2;
+
+    for (int i = start; i > 0; i--) {
+        int current = i;
+        int left = 2*current;
+        int right = left+1;
+        int largest = current;
+
+        // loop while current tasks' deadline is less than left's or right child's deadline
+        while( current < n_tasks && left < n_tasks && right <= n_tasks
+             && (
+                    ((*tasks+current)->deadline < (*tasks + left)->deadline)
+                    || ((*tasks+current)->deadline < (*tasks + right)->deadline)
+                )
+        ) {
+
+            // get the largest one
+            if (left < n_tasks && (*(tasks) + left)->deadline > (*(tasks) + largest)->deadline)
+                largest = left;
+            if (right <= n_tasks && ((*tasks) + right)->deadline > ((*tasks) + largest)->deadline)
+                largest = right;
+            // if largest is not current, swap and level down.
+            if (largest != current) {
+                // swap current and largest
+                task_t temp = *(*tasks + left);
+                *((*tasks) + left) = *(*tasks + right);
+                *(*tasks + right) = temp;
+                // compute new current and left and right.
+                current = largest;
+                left = current*2;
+                right = left +1;
+            } else break;
+        }
+    }
+}
+
+void heapify_up(task_t **tasks, int heap_size, int i) {
     int parent = (int) i/2;
     int largest = parent;
 
     if (parent <= heap_size && i <= heap_size
-        && (((tasks+i))->priority < ((tasks+parent))->priority))
+        && ((*(tasks)+i))->deadline < ((*(tasks) + parent))->deadline)
         largest = i;
 
     if (largest != parent) {
@@ -51,7 +96,7 @@ void heapify_up(task_t *tasks, int heap_size, int i) {
     }
 }
 
-void build_heap(task_t *tasks, int n_tasks){
+void rec_build_heap(task_t **tasks, int n_tasks){
     int start = 1 + (int) (n_tasks)/2;
 
     for (int i = start; i > 0; i--) {
@@ -81,16 +126,18 @@ int init_tpool_pq(tpool_pq_t **tpool_pqs, int queue_size, task_t *task_list) {
 
     /* call build heap only if some tasks available */
     if (tpool_pq->n_tasks > 0)
-        //build_heap(tpool_pq->task_array, tpool_pq->n_tasks); // TODO: UNDO THIS.
+        build_heap(&tpool_pq->task_array, tpool_pq->n_tasks); // TODO: UNDO THIS.
 
     // print the tasks to see the order
-    //printf("printing the tasks after building the heap\n");
-    /*
+    printf("printing the tasks after building the heap\n");
+
     for (int i = 1; i <=queue_size; i++) {
-        printf("Task at %d has priority %d \n",i, (tpool_pq->task_array+i)->priority);
+        printf("Task at %d has deadline %d \n",i, (tpool_pq->task_array+i)->deadline);
     }
-     */
+
     *tpool_pqs = tpool_pq;
+    // free memory
+    free(tpool_pq);
     return 1;
 }
 
@@ -102,7 +149,7 @@ int insert_task(tpool_pq_t **tpool_queue, task_t task) {
         (*tpool_queue)->task_array[(*tpool_queue)->n_tasks++ ] = task;
         // TODO: restore heap property.
         int last_inserted = (*tpool_queue)->n_tasks - 1;
-        heapify_up((*tpool_queue)->task_array, (*tpool_queue)->queue_size, last_inserted);
+        heapify_up(&(*tpool_queue)->task_array, (*tpool_queue)->queue_size, last_inserted);
         return 1;
     }
     /* insert not successful. */
@@ -111,13 +158,72 @@ int insert_task(tpool_pq_t **tpool_queue, task_t task) {
 
 task_t get_task(tpool_pq_t **tpool_queue) {
 
+    // swap root task with last task.
+    // perform iterative heapify down
+    // return last task
+
+    int queue_size = (*tpool_queue)->queue_size;
+    int n_tasks = (*tpool_queue)->n_tasks;
+
+    int root = 1;
+    int swap_index = n_tasks;// TODO VERIFY THIS.
+    // swap first and last task;
+    task_t temp = *((*tpool_queue)->task_array + root);
+    *((*tpool_queue)->task_array+ swap_index) = *((*tpool_queue)->task_array + root);
+    *((*tpool_queue)->task_array + root) = temp;
+
+    // restore heapify property.
+
+    // decrease n_tasks.
+    (*tpool_queue)->n_tasks--;
+    n_tasks--;
+
+    int current = root;
+    int left = root *2;
+    int right = left + 1;
+    int largest = current;
+
+    while(
+            left < n_tasks && right < n_tasks && (
+                                                         (((*tpool_queue)->task_array + current)->deadline < ((*tpool_queue)->task_array + left)->deadline ) ||
+                                                         (((*tpool_queue)->task_array + current)->deadline < ((*tpool_queue)->task_array + right)->deadline )
+            )
+            ) {
+        // get largest and swap current with largest.
+
+        if (((*tpool_queue)->task_array + largest)->deadline < ((*tpool_queue)->task_array + left)->deadline ) {
+            largest = left;
+        }
+        if (((*tpool_queue)->task_array + largest)->deadline < ((*tpool_queue)->task_array + right)->deadline ) {
+            largest = right;
+        }
+
+        if (largest != current) {
+            // swap current and largest
+            //task_t temp = *(*tasks + left);
+            //*((*tasks) + left) = *(*tasks + right);
+            //*(*tasks + right) = temp;
+            task_t temp2 = *((*tpool_queue)->task_array + current);
+            *((*tpool_queue)->task_array+ current) = *((*tpool_queue)->task_array + largest);
+            *((*tpool_queue)->task_array + largest) = temp2;
+            // compute new current and left and right.
+            current = largest;
+            left = current*2;
+            right = left +1;
+        } else break;
+    }
+
+    return temp;
+}
+
+task_t get_task_rec(tpool_pq_t **tpool_queue) {
+    printf("Getting tasks");
     task_t task;
 
-    int current_n_tasks = (*tpool_queue)->n_tasks;
-    task = *((*tpool_queue)->task_array+current_n_tasks);
-    (*tpool_queue)->n_tasks = current_n_tasks-1;
+    //int current_n_tasks = (*tpool_queue)->n_tasks;
+    //task = *((*tpool_queue)->task_array+current_n_tasks);
+    //(*tpool_queue)->n_tasks = current_n_tasks-1;
 
-    /*
     int queue_size = (*tpool_queue)->queue_size;
 
     int root = 1;
@@ -128,15 +234,14 @@ task_t get_task(tpool_pq_t **tpool_queue) {
         task = (*tpool_queue)->task_array[root];
 
         // swap root task with last task.
-        swap((*tpool_queue)->task_array, root, last_inserted_index);
+        swap(&(*tpool_queue)->task_array, root, last_inserted_index);
         // decrease counter
         (*tpool_queue)->n_tasks--;
 
         // TODO: restore heap property.
-        heapify_down((*tpool_queue)->task_array, (*tpool_queue)->n_tasks, root);
+        heapify_down(&(*tpool_queue)->task_array, (*tpool_queue)->n_tasks, root);
     }
-    */
-
+    printf("Returning task, deadline:%d, arguments:%d ", task.deadline, task.arguments);
     return task;
 }
 
@@ -152,8 +257,8 @@ void print_tasks(tpool_pq_t *tpool_pq) {
     for (int i = 0; i < n; i++) {
         task_t t = tpool_pq->task_array[i];
         //(*t.function)(t.arguments);
-        //printf("Task, priority: %d\n", t.priority);
+        //printf("Task, deadline: %d\n", t.deadline);
 
-        //printf("Task: %d, priority: %d\n", i, tpool_pq->task_array[i].priority);
+        //printf("Task: %d, deadline: %d\n", i, tpool_pq->task_array[i].deadline);
     }
 }

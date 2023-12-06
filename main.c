@@ -9,6 +9,7 @@
 
 int fibonacci(int x) {
 
+    //sleep(3);
     if (x == 1 || x == 2) {
         return 1;
     } else
@@ -17,9 +18,9 @@ int fibonacci(int x) {
 
 void function(int i) {
 
-    sleep(5);
-    int val = fibonacci(i);
-    printf("Fibonacci of %d is %d by thread %d\n",i, val, gettid());
+    sleep(2);
+    int val = i*i;
+    printf("Square of %d is %d by thread %d\n",i, val, gettid());
     //printf("Printing task %d\n", i);
 }
 
@@ -39,7 +40,7 @@ int main() {
     task_t *list = malloc(sizeof(task_t)*queue_size);
 
     for (int i = 0; i < (queue_size); i++) {
-        task_t task = {function, (i+1) , 3};
+        task_t task = {function, (i+1) , 100-(i)};
         *(list+i) = task;
         //task_t task2 = {function, i, 5};
         //*(list+i+1) = task2;
@@ -50,7 +51,7 @@ int main() {
 
     /* submit tasks to pool. */
 
-
+    sleep(5);
     /*
     for (int i =0; i < n_tasks; i++) {
         task_t task = {function, i, MEDIUM};
@@ -69,6 +70,8 @@ int main() {
     /* shutdown thread pool. */
     thread_pool_shutdown(&tpool, 1);
     printf("shutdown complete...\n");
+
+    free(list);
     return 0;
 }
 
@@ -98,6 +101,6 @@ void temp() {
     printf("printing tasks in the list..\n");
     print_tasks(pq);
     */
-    /* should expect the high priority functions become first. */
+    /* should expect the high deadline functions become first. */
 
 }

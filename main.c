@@ -39,12 +39,16 @@ int main() {
 
     task_t *list = malloc(sizeof(task_t)*queue_size);
 
+    printf("Queue before heap\n");
     for (int i = 0; i < (queue_size); i++) {
         task_t task = {function, (i+1) , 100-(i)};
         *(list+i) = task;
+        printf("Task %d, deadline %d, added to queue\n",task.arguments, task.deadline);
         //task_t task2 = {function, i, 5};
         //*(list+i+1) = task2;
     }
+
+
 
     //printf("initializing thread Pool. \n");
     thread_pool_init_list(&tpool, n_threads, queue_size, list);

@@ -112,7 +112,7 @@ int thread_pool_init_list(thread_pool_t **thr_pool, int num_threads, int max_que
     *thr_pool = tpool;
     // free memory
     //free(tpool->mutex);
-    free(tpool);
+    //free(tpool);
 
     return 1;
 }
@@ -242,7 +242,7 @@ int thread_pool_shutdown(thread_pool_t **tpool, int finish) {
 
     /* clean up resources. */
     //free ((*tpool)->threads);
-    free (tpool);
+    //free (tpool);
     //free(tpool);
 
     return 1;

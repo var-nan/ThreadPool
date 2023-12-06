@@ -47,33 +47,33 @@ void build_heap(task_t **tasks, int n_tasks) {
     int start = 1 + (n_tasks)/2;
 
     for (int i = start; i > 0; i--) {
-        int current = i;
-        int left = 2*current;
+        int parent = i;
+        int left = 2 * parent;
         int right = left+1;
-        int largest = current;
+        int smallest = parent;
 
-        // loop while current tasks' deadline is less than left's or right child's deadline
-        while( current < n_tasks && left < n_tasks && right <= n_tasks
-             && (
-                    ((*tasks+current)->deadline < (*tasks + left)->deadline)
-                    || ((*tasks+current)->deadline < (*tasks + right)->deadline)
+        // loop while parent tasks' deadline is less than left's or right child's deadline
+        while(parent <= n_tasks && left <= n_tasks && right <= n_tasks
+              && (
+                    ((*tasks + parent)->deadline > (*tasks + left)->deadline)
+                    || ((*tasks + parent)->deadline > (*tasks + right)->deadline)
                 )
         ) {
 
-            // get the largest one
-            if (left < n_tasks && (*(tasks) + left)->deadline > (*(tasks) + largest)->deadline)
-                largest = left;
-            if (right <= n_tasks && ((*tasks) + right)->deadline > ((*tasks) + largest)->deadline)
-                largest = right;
-            // if largest is not current, swap and level down.
-            if (largest != current) {
-                // swap current and largest
-                task_t temp = *(*tasks + left);
-                *((*tasks) + left) = *(*tasks + right);
-                *(*tasks + right) = temp;
-                // compute new current and left and right.
-                current = largest;
-                left = current*2;
+            // get the smallest one
+            if (left <= n_tasks && (*(tasks) + left)->deadline < (*(tasks) + smallest)->deadline)
+                smallest = left;
+            if (right <= n_tasks && ((*tasks) + right)->deadline < ((*tasks) + smallest)->deadline)
+                smallest = right;
+            // if smallest is not parent, swap and level down.
+            if (smallest != parent) {
+                // swap parent and smallest
+                task_t temp = *(*tasks + smallest);
+                *((*tasks) + smallest) = *(*tasks + parent);
+                *(*tasks + parent) = temp;
+                // compute new parent and left and right.
+                parent = smallest;
+                left = parent * 2;
                 right = left +1;
             } else break;
         }
@@ -132,12 +132,12 @@ int init_tpool_pq(tpool_pq_t **tpool_pqs, int queue_size, task_t *task_list) {
     printf("printing the tasks after building the heap\n");
 
     for (int i = 1; i <=queue_size; i++) {
-        printf("Task at %d has deadline %d \n",i, (tpool_pq->task_array+i)->deadline);
+        printf("Task %d, deadline %d \n",i, (tpool_pq->task_array+i)->deadline);
     }
 
     *tpool_pqs = tpool_pq;
     // free memory
-    free(tpool_pq);
+    //free(tpool_pq);
     return 1;
 }
 
@@ -166,49 +166,49 @@ task_t get_task(tpool_pq_t **tpool_queue) {
     int n_tasks = (*tpool_queue)->n_tasks;
 
     int root = 1;
-    int swap_index = n_tasks;// TODO VERIFY THIS.
+    int swap_index = n_tasks;// TODO verify index.
     // swap first and last task;
     task_t temp = *((*tpool_queue)->task_array + root);
-    *((*tpool_queue)->task_array+ swap_index) = *((*tpool_queue)->task_array + root);
-    *((*tpool_queue)->task_array + root) = temp;
+    *((*tpool_queue)->task_array+ root) = *((*tpool_queue)->task_array + swap_index);
+    *((*tpool_queue)->task_array + swap_index) = temp;
 
-    // restore heapify property.
+    // restore heap property.
 
     // decrease n_tasks.
     (*tpool_queue)->n_tasks--;
     n_tasks--;
 
-    int current = root;
+    int parent = root;
     int left = root *2;
     int right = left + 1;
-    int largest = current;
+    int smallest = parent;
 
     while(
             left < n_tasks && right < n_tasks && (
-                                                         (((*tpool_queue)->task_array + current)->deadline < ((*tpool_queue)->task_array + left)->deadline ) ||
-                                                         (((*tpool_queue)->task_array + current)->deadline < ((*tpool_queue)->task_array + right)->deadline )
+                    (((*tpool_queue)->task_array + parent)->deadline > ((*tpool_queue)->task_array + left)->deadline ) ||
+                    (((*tpool_queue)->task_array + parent)->deadline > ((*tpool_queue)->task_array + right)->deadline )
             )
             ) {
-        // get largest and swap current with largest.
+        // get smallest and swap parent with smallest.
 
-        if (((*tpool_queue)->task_array + largest)->deadline < ((*tpool_queue)->task_array + left)->deadline ) {
-            largest = left;
+        if (((*tpool_queue)->task_array + smallest)->deadline > ((*tpool_queue)->task_array + left)->deadline ) {
+            smallest = left;
         }
-        if (((*tpool_queue)->task_array + largest)->deadline < ((*tpool_queue)->task_array + right)->deadline ) {
-            largest = right;
+        if (((*tpool_queue)->task_array + smallest)->deadline > ((*tpool_queue)->task_array + right)->deadline ) {
+            smallest = right;
         }
 
-        if (largest != current) {
-            // swap current and largest
+        if (smallest != parent) {
+            // swap parent and smallest
             //task_t temp = *(*tasks + left);
             //*((*tasks) + left) = *(*tasks + right);
             //*(*tasks + right) = temp;
-            task_t temp2 = *((*tpool_queue)->task_array + current);
-            *((*tpool_queue)->task_array+ current) = *((*tpool_queue)->task_array + largest);
-            *((*tpool_queue)->task_array + largest) = temp2;
-            // compute new current and left and right.
-            current = largest;
-            left = current*2;
+            task_t temp2 = *((*tpool_queue)->task_array + parent);
+            *((*tpool_queue)->task_array + parent) = *((*tpool_queue)->task_array + smallest);
+            *((*tpool_queue)->task_array + smallest) = temp2;
+            // compute new parent and left and right.
+            parent = smallest;
+            left = parent * 2;
             right = left +1;
         } else break;
     }
